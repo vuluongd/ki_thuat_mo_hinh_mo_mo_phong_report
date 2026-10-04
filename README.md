@@ -1,5 +1,6 @@
 # Khảo sát khí động biên dạng NACA 2412: đối sánh XFLR5 (định lượng) và OpenFOAM (định tính)
-
+## Sinh viên thực hiện: Vũ Đức Lương
+## MSV 21021425
 Báo cáo giữa kỳ. Thư mục này chứa toàn bộ code và hướng dẫn tái lập kết quả.
 Các mục có dấu **[điền]** cần bổ sung số liệu sau khi chạy XFLR5 và chụp hình ParaView.
 

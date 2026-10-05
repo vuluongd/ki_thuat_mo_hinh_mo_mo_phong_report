@@ -171,7 +171,7 @@ Tâm khí động (hồi quy trên α ≤ 10°, 3 điểm): Xac/c = **0,232** (O
 
 ### 6.5 Hình minh họa
 
-Các hình dưới đây cần được chèn sau khi chạy lại code với số liệu cuối cùng. Thay các dòng **[chèn hình]** bằng ảnh thật.
+Các hình dưới đây cần được chèn sau khi chạy lại code với số liệu cuối cùng. 
 
 #### 6.5.1 Lực khí động và tâm áp suất theo góc tấn
 
@@ -198,8 +198,8 @@ Mở `cases/af_aX/case.foam`, chọn bước cuối (2000), nhìn theo trục z,
 
 | Nội dung | 0° | 5° | 10° | 15° |
 |---|---|---|---|---|
-| Contour áp suất `p` | **[chèn hình]** | **[chèn hình]** | ![10 độ](/paraview/contour10.png)| ![15 độ](/paraview/contour15.png)  |
-| Vận tốc `U` (magnitude) | **[chèn hình]** | **[chèn hình]** | **[chèn hình]** | **[chèn hình]** |
+| Contour áp suất `p` | ![0 độ](/paraview/contour0.png) | ![0 độ](/paraview/contour5.png) | ![10 độ](/paraview/contour10.png)| ![15 độ](/paraview/contour15.png)  |
+| Vận tốc `U` (magnitude) | ![0 độ](/paraview/magnitude0.png) | ![5 độ](/paraview/magnitude5.png) | ![10 độ](/paraview/magnitude10.png)| ![15 độ](/paraview/magnitude15.png) |
 | Vorticity theo z  | **[chèn hình]** | **[chèn hình]** | **[chèn hình]** | **[chèn hình]** |
 | Streamline và vùng hồi lưu (`Uwind` < 0) | | | **[chèn hình]** | **[chèn hình]** |
 

@@ -1,10 +1,8 @@
 # Khảo sát khí động biên dạng NACA 2412: đối sánh XFLR5 và OpenFOAM
 ## Sinh viên thực hiện: Vũ Đức Lương
-## MSV 21021425
+## Mã sinh viên 21021425
 
 Báo cáo giữa kỳ. Thư mục này chứa toàn bộ code và hướng dẫn tái lập kết quả.
-Các mục có dấu **[điền]** hoặc **[kiểm tra]** cần bổ sung hoặc xác nhận trước khi nộp.
-
 ## 1. Mục tiêu
 
 1. Xác định hệ số khí động (CL, CD, Cm), **tâm áp suất** (Xcp) và **tâm khí động** (Xac) của biên dạng NACA 2412 theo góc tấn α.
@@ -192,7 +190,9 @@ Chú thích dùng cho báo cáo: mũi tên xanh là lift, mũi tên cam là drag
 
 #### 6.5.2 Phân bố Cp theo x/c
 
-- `cp_so_sanh.png` (sinh bởi `compare.py`): Cp của XFLR5 và OpenFOAM chồng nhau tại từng góc. **[chèn hình]**
+- `cp_so_sanh.png` (sinh bởi `compare.py`): Cp của XFLR5 và OpenFOAM chồng nhau tại từng góc. 
+
+  ![Phân bố Cp theo x/c của từng góc](cp_so_sanh.png)
 
 #### 6.5.3 Trường dòng từ ParaView (OpenFOAM)
 

@@ -22,7 +22,7 @@ startTime       0;
 
 stopAt          endTime;
 
-endTime         500;
+endTime         2000;
 
 deltaT          1;
 
@@ -43,5 +43,6 @@ timeFormat      general;
 timePrecision   6;
 
 runTimeModifiable true;
+
 
 // ************************************************************************* //

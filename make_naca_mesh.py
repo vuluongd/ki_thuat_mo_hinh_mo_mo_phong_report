@@ -1,8 +1,4 @@
-"""Sinh lưới cho NACA 4 chữ số (chord = 1) bằng Gmsh, xuất naca.msh cho gmshToFoam.
 
-Cách dùng:  python3 make_naca_mesh.py 2412
-Patch: inlet (nửa cung trước), outlet (nửa cung sau), walls (biên dạng), frontAndBack (empty).
-"""
 import sys, math
 import gmsh
 
@@ -77,7 +73,7 @@ gmsh.model.mesh.field.setNumber(bl, "Quads", 1)
 gmsh.model.mesh.field.setNumber(bl, "IntersectMetrics", 0)
 gmsh.model.mesh.field.setAsBoundaryLayer(bl)
 
-# kích thước ô theo khoảng cách tới biên dạng
+
 d = gmsh.model.mesh.field.add("Distance")
 gmsh.model.mesh.field.setNumbers(d, "CurvesList", [su, sl])
 gmsh.model.mesh.field.setNumber(d, "Sampling", 200)
@@ -92,7 +88,7 @@ gmsh.option.setNumber("Mesh.MeshSizeExtendFromBoundary", 0)
 gmsh.option.setNumber("Mesh.MeshSizeFromPoints", 0)
 gmsh.option.setNumber("Mesh.MeshSizeFromCurvature", 0)
 
-# đùn 1 lớp theo z (lăng trụ / hex), recombine
+
 out = g.extrude([(2, surf)], 0, 0, THICK_Z, numElements=[1], recombine=True)
 g.synchronize()
 top = out[0][1]
@@ -100,7 +96,7 @@ vol = out[1][1]
 inlet, outlet, walls = [], [], []
 for dim, tag in out[2:]:
     bb = gmsh.model.getBoundingBox(dim, tag)
-    # phân loại theo bounding box
+
     if bb[3] - bb[0] < 3 and bb[4] - bb[1] < 3:
         walls.append(tag)
     elif (bb[0] + bb[3]) / 2 < cx:

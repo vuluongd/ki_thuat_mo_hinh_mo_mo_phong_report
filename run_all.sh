@@ -1,9 +1,4 @@
-#!/bin/bash
-# Chạy một lượt: lưới -> case gốc -> các góc tấn -> so sánh với XFLR5.
-# Đặt chung thư mục với: make_naca_mesh.py setup_case.sh run_cases.sh compare.py
-# và file polar XFLR5 tên  polar_xflr5.txt  (nếu có).
-# Dùng:  bash run_all.sh            (mặc định NACA 2412, góc 0 5 10 15)
-#        CODE=4412 ANGLES="0 4 8 12" bash run_all.sh
+
 DIR=$(cd "$(dirname "$0")" && pwd)
 export CODE=${CODE:-2412}
 cd "$DIR" || exit 1
@@ -19,9 +14,10 @@ grep -q "converged\|End" "$BASE/log.foamRun" || echo "CẢNH BÁO: case gốc c�
 echo "== 3/4 Chạy các góc tấn"
 bash run_cases.sh
 
-echo "== 4/4 So sánh với XFLR5"
-if [ -f polar_xflr5.txt ]; then
-  python3 compare.py --xflr5 polar_xflr5.txt
+echo "== 4/4 Tích phân Cp và so sánh với XFLR5"
+if ls xflr5_cp/* >/dev/null 2>&1; then
+  python3 compare.py --code "$CODE"
 else
-  echo "Chưa có polar_xflr5.txt. Xuất polar từ XFLR5, lưu vào $DIR rồi chạy: python3 compare.py --xflr5 polar_xflr5.txt"
+  echo "Chưa có thư mục xflr5_cp/. Xuất Cp từ XFLR5 (mỗi góc một file: a0.txt, a5.txt, a10.txt, a15.txt), rồi chạy: python3 compare.py --code $CODE"
+  python3 compare.py --code "$CODE"
 fi

@@ -1,89 +1,112 @@
-"""So sánh OpenFOAM (định tính) và XFLR5 (định lượng): CL, Cm, Xcp, Xac theo alpha.
+import argparse
+import csv
+import glob
+import os
+import re
 
-Cách dùng:
-    python3 compare.py --xflr5 polar_xflr5.txt
-(XFLR5: xuất polar bằng File > Export (Polars) dạng .txt, Cm lấy quanh c/4)
-"""
-import argparse, glob, os, re
-import numpy as np
+import matplotlib
+matplotlib.use("Agg")
 import matplotlib.pyplot as plt
+import numpy as np
 
+from cp_integration import (aerodynamic_center, alpha_from_name, integrate, read_foam_wall_cp,
+                            read_xflr5_cp, xflr5_contour_cp)
+
+here = os.path.dirname(os.path.abspath(__file__))
 ap = argparse.ArgumentParser()
-ap.add_argument("--xflr5", required=True, help="file polar XFLR5 (.txt)")
-ap.add_argument("--cases", default=os.path.join(os.path.dirname(os.path.abspath(__file__)), "cases", "af_a*"), help="mẫu đường dẫn các case")
+ap.add_argument("--code", default="2412", help="mã NACA 4 chữ số")
+ap.add_argument("--cases", default=os.path.join(here, "cases", "af_a*"), help="các case OpenFOAM theo góc tấn")
+ap.add_argument("--xflr5-dir", default=os.path.join(here, "xflr5_cp"), help="thư mục file Cp XFLR5 (a0.txt, a5.txt, ...)")
+ap.add_argument("--xflr5-col", type=int, default=None, help="chỉ số cột Cp (mặc định: cột Cpv)")
+ap.add_argument("--umag", type=float, default=26.0, help="|U| của OpenFOAM (m/s)")
+ap.add_argument("--patch", default="walls")
 args = ap.parse_args()
 
+results = {"OpenFOAM": {}, "XFLR5": {}}
+cp_data = {"OpenFOAM": {}, "XFLR5": {}}
+check = {}
 
-def read_foam(case):
-    """Đọc dòng cuối của forceCoeffs.dat -> (Cm, Cd, Cl)."""
-    files = sorted(glob.glob(f"{case}/postProcessing/forceCoeffsDict/*/forceCoeffs.dat"))
-    if not files:
-        return None
-    header, last = None, None
-    for line in open(files[-1]):
-        if line.startswith("#"):
-            if "Cm" in line and "Cl" in line:
-                header = line.lstrip("#").split()
-        elif line.strip():
-            last = line.split()
-    col = {n: i for i, n in enumerate(header)}
-    return float(last[col["Cm"]]), float(last[col["Cd"]]), float(last[col["Cl"]])
+for case in glob.glob(args.cases):
+    m = re.search(r"af_a(-?\d+(?:\.\d+)?)$", case)
+    if not m:
+        continue
+    a = float(m.group(1))
+    try:
+        r, cp_e, cen = read_foam_wall_cp(case, args.patch, args.umag)
+    except Exception as e:
+        print(f"[OpenFOAM alpha={a}] bỏ qua: {e}")
+        continue
+    results["OpenFOAM"][a] = integrate(r, cp_e, a, cp_on="edges")
+    cp_data["OpenFOAM"][a] = (cen[:, 0], cp_e)
+    fc = sorted(glob.glob(os.path.join(case, "postProcessing", "forceCoeffsDict", "*", "forceCoeffs.dat")))
+    if fc:
+        last = [l.split() for l in open(fc[-1]) if l.strip() and not l.startswith("#")][-1]
+        check[a] = (-float(last[1]), float(last[3]), float(last[2]))  # Cm (đổi dấu), CL, CD từ forceCoeffs
 
+for f in glob.glob(os.path.join(args.xflr5_dir, "*")):
+    a = alpha_from_name(f)
+    if a is None or os.path.isdir(f):
+        continue
+    x, cp = read_xflr5_cp(f, args.xflr5_col)
+    r, cpn = xflr5_contour_cp(x, cp, args.code, a)
+    results["XFLR5"][a] = integrate(r, cpn, a, cp_on="nodes")
+    cp_data["XFLR5"][a] = (x, cp)
 
-def read_xflr5(path):
-    """Cột polar XFLR5: alpha CL CD CDp Cm ..."""
-    rows = []
-    for line in open(path, errors="ignore"):
-        p = line.split()
-        if len(p) >= 5 and re.fullmatch(r"-?\d+\.?\d*", p[0]):
-            try:
-                rows.append([float(x) for x in p[:5]])
-            except ValueError:
-                pass
-    return np.array(rows)  # alpha, CL, CD, CDp, Cm
+# ---- bảng kết quả
+rows = []
+print(f"{'nguồn':9s} {'alpha':>6s} {'CL':>8s} {'CDp':>8s} {'Cm_c4':>8s} {'Xcp/c':>7s}")
+for src in results:
+    for a in sorted(results[src]):
+        o = results[src][a]
+        rows.append([src, a, o["CL"], o["CDp"], o["Cm_c4"], o["Xcp"], o["Cy"]])
+        print(f"{src:9s} {a:6.1f} {o['CL']:8.4f} {o['CDp']:8.4f} {o['Cm_c4']:8.4f} {o['Xcp']:7.3f}")
+with open("ket_qua_tich_phan.csv", "w", newline="") as fh:
+    w = csv.writer(fh)
+    w.writerow(["source", "alpha", "CL", "CDp", "Cm_c4", "Xcp", "Cn"])
+    w.writerows(rows)
 
+xac = {}
+for src in results:
+    al = sorted(results[src])
+    if len(al) >= 2:
+        xac[src] = aerodynamic_center(al, [results[src][a]["Cy"] for a in al], [results[src][a]["Cm_c4"] for a in al])
+        print(f"Xac/c {src} = {xac[src]:.3f}  (hồi quy trên alpha <= 10 deg)")
 
-# --- OpenFOAM ---
-alphas, foam = [], []
-for c in glob.glob(args.cases):
-    m = re.search(r"af_a(-?\d+)$", c)
-    r = read_foam(c) if m else None
-    if r:
-        alphas.append(int(m.group(1))); foam.append(r)
-order = np.argsort(alphas)
-a_f = np.array(alphas)[order]
-foam = np.array(foam)[order]
-Cm_f, Cd_f, Cl_f = foam[:, 0], foam[:, 1], foam[:, 2]
+if check:
+    print("\nĐối chiếu OpenFOAM: tích phân Cp so với forceCoeffs (forceCoeffs gồm cả ma sát, CD sẽ lớn hơn CDp)")
+    for a in sorted(check):
+        o = results["OpenFOAM"][a]
+        cm, cl, cd = check[a]
+        print(f"  alpha={a:5.1f}  CL {o['CL']:.4f} vs {cl:.4f} | Cm_c4 {o['Cm_c4']:.4f} vs {cm:.4f} | CDp {o['CDp']:.4f} vs CD {cd:.4f}")
 
-# --- XFLR5 ---
-x = read_xflr5(args.xflr5)
-a_x, Cl_x, Cd_x, Cm_x = x[:, 0], x[:, 1], x[:, 2], x[:, 4]
-
-# --- Xcp và Xac (moment quanh c/4): Xcp/c = 0.25 - Cm/CL ; Xac/c = 0.25 - dCm/dCL ---
-def xcp(Cm, Cl):
-    Cl = np.where(np.abs(Cl) < 0.05, np.nan, Cl)  # tránh chia cho CL ~ 0
-    return 0.25 - Cm / Cl
-
-def xac(Cm, Cl, mask):
-    return 0.25 - np.polyfit(Cl[mask], Cm[mask], 1)[0]
-
-lin_f = a_f <= 5            # vùng tuyến tính để tính tâm khí động
-lin_x = a_x <= 5
-print("alpha_OpenFOAM:", a_f)
-print(f"Xac/c OpenFOAM = {xac(Cm_f, Cl_f, lin_f):.3f}" if lin_f.sum() >= 2 else "Cần >= 2 góc <= 5 deg để tính Xac")
-print(f"Xac/c XFLR5    = {xac(Cm_x, Cl_x, lin_x):.3f}")
-
-# --- Vẽ ---
+# ---- đồ thị hệ số
+style = {"OpenFOAM": "o--", "XFLR5": "s-"}
 fig, ax = plt.subplots(2, 2, figsize=(11, 8))
-ax[0, 0].plot(a_x, Cl_x, "-", label="XFLR5"); ax[0, 0].plot(a_f, Cl_f, "o--", label="OpenFOAM")
-ax[0, 0].set(xlabel="alpha (deg)", ylabel="CL", title="CL - alpha")
-ax[0, 1].plot(a_x, Cm_x, "-", label="XFLR5"); ax[0, 1].plot(a_f, Cm_f, "o--", label="OpenFOAM")
-ax[0, 1].set(xlabel="alpha (deg)", ylabel="Cm (c/4)", title="Cm - alpha")
-ax[1, 0].plot(a_x, xcp(Cm_x, Cl_x), "-", label="XFLR5"); ax[1, 0].plot(a_f, xcp(Cm_f, Cl_f), "o--", label="OpenFOAM")
-ax[1, 0].set(xlabel="alpha (deg)", ylabel="Xcp/c", title="Tam ap suat")
-ax[1, 1].plot(Cd_x, Cl_x, "-", label="XFLR5"); ax[1, 1].plot(Cd_f, Cl_f, "o--", label="OpenFOAM")
-ax[1, 1].set(xlabel="CD", ylabel="CL", title="Drag polar")
-for a in ax.ravel():
-    a.grid(True, alpha=0.3); a.legend()
+for src in results:
+    al = sorted(results[src])
+    if not al:
+        continue
+    g = lambda k: [results[src][a][k] for a in al]
+    ax[0, 0].plot(al, g("CL"), style[src], label=src)
+    ax[0, 1].plot(al, g("Cm_c4"), style[src], label=src)
+    ax[1, 0].plot(al, g("Xcp"), style[src], label=src)
+    ax[1, 1].plot(al, g("CDp"), style[src], label=src)
+for a_, (xl, yl, t) in zip(ax.ravel(), [("alpha (deg)", "CL", "CL - alpha"), ("alpha (deg)", "Cm (c/4, ngóc mũi dương)", "Cm - alpha"),
+                                         ("alpha (deg)", "Xcp/c", "Tâm áp suất"), ("alpha (deg)", "CD do áp suất", "Lực cản áp suất")]):
+    a_.set(xlabel=xl, ylabel=yl, title=t); a_.grid(alpha=0.3); a_.legend()
 plt.tight_layout(); plt.savefig("so_sanh.png", dpi=200)
-print("Đã lưu so_sanh.png")
+
+# ---- Cp(x/c) chồng hai nguồn
+angles = sorted(set(cp_data["OpenFOAM"]) | set(cp_data["XFLR5"]))
+if angles:
+    nc = min(2, len(angles)); nr = int(np.ceil(len(angles) / nc))
+    fig, axs = plt.subplots(nr, nc, figsize=(6 * nc, 4.2 * nr), squeeze=False)
+    for a_, a in zip(axs.ravel(), angles):
+        if a in cp_data["XFLR5"]:
+            a_.plot(*cp_data["XFLR5"][a], "-", label="XFLR5")
+        if a in cp_data["OpenFOAM"]:
+            a_.plot(*cp_data["OpenFOAM"][a], ".", ms=3, label="OpenFOAM")
+        a_.invert_yaxis(); a_.grid(alpha=0.3); a_.legend()
+        a_.set(title=f"alpha = {a:g} deg", xlabel="x/c", ylabel="Cp")
+    plt.tight_layout(); plt.savefig("cp_so_sanh.png", dpi=200)
+print("\nĐã lưu so_sanh.png, cp_so_sanh.png, ket_qua_tich_phan.csv")

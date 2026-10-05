@@ -1,9 +1,3 @@
-#!/bin/bash
-# Chạy airFoil2D (foamRun) ở nhiều góc tấn.
-# Cách dùng:
-#   1) cp -r $FOAM_TUTORIALS/incompressible/simpleFoam/airFoil2D ~/airfoil_base
-#   2) cd ~/airfoil_base && ./Allrun   (chạy 1 lần để chắc chắn tutorial hoạt động)
-#   3) ./Allclean (nếu có) rồi chạy script này:  bash run_cases.sh
 
 DIR=$(cd "$(dirname "$0")" && pwd)
 CODE=${CODE:-2412}

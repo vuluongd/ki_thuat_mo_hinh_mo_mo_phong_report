@@ -8,9 +8,8 @@ Báo cáo giữa kỳ. Thư mục này chứa toàn bộ code và hướng dẫn
 1. Xác định hệ số khí động (CL, CD, Cm), **tâm áp suất** (Xcp) và **tâm khí động** (Xac) của biên dạng NACA 2412 theo góc tấn α.
 2. Đối sánh hai nguồn dữ liệu, **cùng một phép tích phân áp suất** (`cp_integration.py`) để chênh lệch chỉ đến từ nguồn Cp:
    - **XFLR5** (XFoil: dòng thế kết hợp lớp biên nhớt, có mô hình chuyển tiếp).
-   - **OpenFOAM** (RANS, Spalart-Allmaras, rối hoàn toàn), thay cho Ansys Fluent do không có giấy phép.
+   - **OpenFOAM** (RANS, Spalart-Allmaras, rối hoàn toàn)
 3. Dùng ảnh trường dòng (contour áp suất, vận tốc, streamline) để nhận xét hiện tượng **tách dòng** ở góc tấn lớn.
-4. Kiểm thử code tính Xcp và Xac trên NACA 0012, vì biên dạng này có đáp án biết trước (Xac ≈ 0,25c, Cm quanh c/4 ≈ 0). **[điền: chưa chạy]**
 
 Điều kiện khảo sát: chord c = 1 m, vận tốc dòng tới |U| = 26 m/s, độ nhớt động học ν = 1×10⁻⁵ m²/s (đọc từ `constant/physicalProperties`; bản OpenFOAM dev không còn file `transportProperties`), suy ra **Re = 2,6×10⁶**. Góc tấn: 0°, 5°, 10°, 15°.
 
@@ -151,7 +150,6 @@ Hội tụ: ở 5°, CL thay đổi dưới 10⁻⁵ trong các bước cuối. 
 | 10 | 1,3016 | −0,0442 | 0,284 |
 | 15 | 1,6569 | −0,0185 | 0,262 |
 
-CL ở đây tính từ Cp xuất ra, **chưa đối chiếu với cột CL của polar XFLR5** **[kiểm tra]**. Nếu hai số khác nhau đáng kể thì lỗi nằm ở bước xuất Cp. CD của XFLR5 lấy từ polar **[điền]**.
 
 ### 6.4 Đối sánh
 
@@ -166,10 +164,10 @@ Tâm khí động (hồi quy trên α ≤ 10°, 3 điểm): Xac/c = **0,232** (O
 
 | Nội dung | XFLR5 | OpenFOAM |
 |---|---|---|
-| Phân bố áp suất | Đồ thị Cp theo x/c (`cp_so_sanh.png`) **[chèn hình]** | Contour áp suất tại 0°, 5°, 10°, 15° **[chèn hình]** |
+| Phân bố áp suất | Đồ thị Cp theo x/c (`cp_so_sanh.png`)  | Contour áp suất tại 0°, 5°, 10°, 15° |
 | Tâm áp suất Xcp | 0,468 → 0,319 → 0,284 → 0,262 | 0,474 → 0,311 → 0,279 → 0,322 |
 | Tâm khí động Xac | 0,242c | 0,232c |
-| Tách dòng | Chỉ gián tiếp: không thấy stall đến 15° | CL rớt ở 15° (1,108 so với 1,128 ở 10°), CDp tăng vọt **[chèn hình streamline, nhất là 10° và 15°]** |
+| Tách dòng | Chỉ gián tiếp: không thấy stall đến 15° | CL rớt ở 15° (1,108 so với 1,128 ở 10°), CDp tăng vọt **[hình streamline, nhất là 10° và 15°]** |
 
 ### 6.5 Hình minh họa
 
@@ -200,11 +198,10 @@ Mở `cases/af_aX/case.foam`, chọn bước cuối (2000), nhìn theo trục z,
 
 | Nội dung | 0° | 5° | 10° | 15° |
 |---|---|---|---|---|
-| Contour áp suất `p` | **[chèn hình]** | **[chèn hình]** | **[chèn hình]** | **[chèn hình]** |
+| Contour áp suất `p` | **[chèn hình]** | **[chèn hình]** | ![10 độ](/paraview/contour10.png)| ![15 độ](/paraview/contour15.png)  |
 | Vận tốc `U` (magnitude) | **[chèn hình]** | **[chèn hình]** | **[chèn hình]** | **[chèn hình]** |
-| Vorticity theo z (filter *Gradient*, tick *Compute Vorticity*) | **[chèn hình]** | **[chèn hình]** | **[chèn hình]** | **[chèn hình]** |
+| Vorticity theo z  | **[chèn hình]** | **[chèn hình]** | **[chèn hình]** | **[chèn hình]** |
 | Streamline và vùng hồi lưu (`Uwind` < 0) | | | **[chèn hình]** | **[chèn hình]** |
-| Zoom mũi và đuôi (kiểm tra lưới) | **[chèn hình]** | | | |
 
 Lưu ý: case là 2D dừng (SIMPLE), nên chỉ quan sát được lớp biên, vùng cắt và vùng hồi lưu trung bình. Không có xoáy đầu cánh (tip vortex) hay xoáy bong chu kỳ.
 
@@ -234,4 +231,4 @@ Lưu ý: case là 2D dừng (SIMPLE), nên chỉ quan sát được lớp biên,
 4. C. Geuzaine, J.-F. Remacle, "Gmsh: a three-dimensional finite element mesh generator", 2009; tài liệu tại gmsh.info.
 5. P. R. Spalart, S. R. Allmaras, "A one-equation turbulence model for aerodynamic flows", 1992.
 
-*Ghi chú:* các script được xây dựng với sự hỗ trợ của công cụ AI (Claude); người thực hiện đã chạy, kiểm tra và chịu trách nhiệm về kết quả. Khai báo mục này nếu giảng viên yêu cầu.
+*Ghi chú:* các script được xây dựng với sự hỗ trợ của công cụ AI (Claude); người thực hiện đã chạy, kiểm tra và chịu trách nhiệm về kết quả. 

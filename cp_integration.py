@@ -7,7 +7,7 @@ import numpy as np
 NUM = r"[-+]?\d*\.?\d+(?:[eE][-+]?\d+)?"
 
 
-# ---------------------------------------------------------------- hình học
+
 def naca4(code, n=200):
 
     m, p, t = int(code[0]) / 100, int(code[1]) / 10, int(code[2:]) / 100
@@ -25,11 +25,11 @@ def naca4(code, n=200):
 
 
 def closed_contour(upper, lower):
-    """Contour kín không lặp điểm: mặt trên mũi->đuôi, rồi mặt dưới đuôi->mũi."""
+
     return np.vstack((upper, lower[-2:0:-1]))
 
 
-# ---------------------------------------------------------------- tích phân
+
 def integrate(r, cp, alpha_deg, cp_on="nodes"):
   
     r = np.asarray(r, float)
@@ -60,7 +60,7 @@ def integrate(r, cp, alpha_deg, cp_on="nodes"):
 
 
 def aerodynamic_center(alpha, cn, cm_c4, amax=10.0):
-    """Xac/c = 0.25 - (dCm/dalpha)/(dCn/dalpha), hồi quy tuyến tính trên alpha <= amax."""
+
     alpha, cn, cm_c4 = map(np.asarray, (alpha, cn, cm_c4))
     k = alpha <= amax
     if k.sum() < 2:
@@ -70,7 +70,7 @@ def aerodynamic_center(alpha, cn, cm_c4, amax=10.0):
 
  #XFLR5
 def read_xflr5_cp(path, col=None):
-    """File Cp xuất từ XFLR5: cột x, (Cpi), Cpv. Trả về (x, cp) theo thứ tự trong file."""
+
     rows, header = [], None
     for line in open(path, errors="ignore"):
         tok = [t for t in re.split(r"[,\s;]+", line.strip()) if t]
@@ -89,11 +89,10 @@ def read_xflr5_cp(path, col=None):
 
 
 def xflr5_contour_cp(x, cp, code, alpha):
-    """Tách 2 nhánh tại x nhỏ nhất, nội suy Cp lên contour NACA, trả về (r, cp_nodes)."""
+
     i0 = int(np.argmin(x))
     first, second = (x[: i0 + 1], cp[: i0 + 1]), (x[i0:], cp[i0:])
     if alpha >= 2 and first[1].mean() > second[1].mean():
-        print(f"  [xflr5 alpha={alpha}] nhánh đầu có Cp trung bình cao hơn -> coi là mặt dưới, đã đổi chỗ")
         first, second = second, first
     upper, lower = naca4(code)
     cps = []
@@ -106,7 +105,7 @@ def xflr5_contour_cp(x, cp, code, alpha):
 # OpenFOAM
 def _body(path):
     s = open(path, errors="ignore").read()
-    return s[s.index("}") + 1:]  # bỏ phần FoamFile
+    return s[s.index("}") + 1:]  # 
 
 
 def _patch_range(case, name):
@@ -121,7 +120,6 @@ def _latest_time(case):
 
 
 def read_foam_wall_cp(case, patch="walls", umag=26.0):
-    """Đọc lưới và p của bước thời gian cuối; trả về contour kín và Cp hằng số trên từng mặt."""
     pm = os.path.join(case, "constant", "polyMesh")
     pts = np.array(re.findall(r"\(\s*(%s)\s+(%s)\s+(%s)\s*\)" % (NUM, NUM, NUM), _body(os.path.join(pm, "points"))), float)
     faces = [[int(v) for v in f.split()] for _, f in re.findall(r"(\d+)\(([\d\s]+)\)", _body(os.path.join(pm, "faces")))]

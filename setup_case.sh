@@ -1,6 +1,4 @@
 #!/bin/bash
-# Tạo case gốc cho NACA bất kỳ từ tutorial airFoil2D, đặt trong ./cases/ cạnh script.
-# Dùng:  bash setup_case.sh 2412
 DIR=$(cd "$(dirname "$0")" && pwd)
 CODE=${1:-2412}
 NEW=$DIR/cases/naca${CODE}_base
